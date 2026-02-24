@@ -585,6 +585,9 @@ importers:
       better-auth:
         specifier: 'catalog:'
         version: 1.3.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(zod@3.25.67)
+      cf-imap:
+        specifier: 0.0.12
+        version: 0.0.12(typescript@5.8.3)
       cheerio:
         specifier: 1.1.0
         version: 1.1.0
@@ -633,6 +636,9 @@ importers:
       jsonrepair:
         specifier: ^3.12.0
         version: 3.12.0
+      mailparser:
+        specifier: 3.9.3
+        version: 3.9.3
       mime-types:
         specifier: 3.0.1
         version: 3.0.1
@@ -675,6 +681,9 @@ importers:
       uuid:
         specifier: 11.1.0
         version: 11.1.0
+      worker-mailer:
+        specifier: 1.2.1
+        version: 1.2.1
       wrangler:
         specifier: 'catalog:'
         version: 4.32.0(@cloudflare/workers-types@4.20250628.0)
@@ -688,6 +697,9 @@ importers:
       '@types/he':
         specifier: 1.2.3
         version: 1.2.3
+      '@types/mailparser':
+        specifier: 3.4.6
+        version: 3.4.6
       '@types/node':
         specifier: ^22.9.0
         version: 22.15.29
@@ -4679,6 +4691,9 @@ packages:
   '@types/lodash@4.17.19':
     resolution: {integrity: sha512-NYqRyg/hIQrYPT9lbOeYc3kIRabJDn/k4qQHIXUpx88CBDww2fD15Sg5kbXlW86zm2XEW4g0QxkTI3/Kfkc7xQ==}
 
+  '@types/mailparser@3.4.6':
+    resolution: {integrity: sha512-wVV3cnIKzxTffaPH8iRnddX1zahbYB1ZEoAxyhoBo3TBCBuK6nZ8M8JYO/RhsCuuBVOw/DEN/t/ENbruwlxn6Q==}
+
   '@types/markdown-it@13.0.9':
     resolution: {integrity: sha512-1XPwR0+MgXLWfTn9gCsZ55AHOKW1WN+P9vr0PaQh5aerR9LLQXUbjfEAFhjmEmyoYFWAyuN2Mqkn40MZ4ukjBw==}
 
@@ -4916,6 +4931,9 @@ packages:
 
   '@xobotyi/scrollbar-width@1.9.5':
     resolution: {integrity: sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ==}
+
+  '@zone-eu/mailsplit@5.4.8':
+    resolution: {integrity: sha512-eEyACj4JZ7sjzRvy26QhLgKEMWwQbsw1+QZnlLX+/gihcNH07lVPOcnwf5U6UAL7gkc//J3jVd76o/WS+taUiA==}
 
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
@@ -5261,6 +5279,11 @@ packages:
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
+
+  cf-imap@0.0.12:
+    resolution: {integrity: sha512-ZE4XWXZPV+aXZTcJKWNAgg340WEmP29SKZ+mnweZQ2q8KTcDGXT3oz5LLTXwGA2huRpI55+lBqIk4nB+nIfz4Q==}
+    peerDependencies:
+      typescript: ^5.0.0
 
   chai@4.5.0:
     resolution: {integrity: sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw==}
@@ -5936,6 +5959,10 @@ packages:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
 
+  encoding-japanese@2.2.0:
+    resolution: {integrity: sha512-EuJWwlHPZ1LbADuKTClvHtwbaFn4rOD+dRAbWysqEOXRc2Uui0hJInNJrsdH0c+OhJA4nrCBdSkW4DD5YxAo6A==}
+    engines: {node: '>=8.10.0'}
+
   encoding-sniffer@0.2.1:
     resolution: {integrity: sha512-5gvq20T6vfpekVtqrYQsSCFZ1wEg5+wW0/QaZMWkFr6BqD3NfKs0rLCx4rrVlSWJeZb5NBJgVLswK/w2MWU+Gw==}
 
@@ -6476,25 +6503,29 @@ packages:
 
   glob@10.4.5:
     resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@11.0.1:
     resolution: {integrity: sha512-zrQDm8XPnYEKawJScsnM0QzobJxlT/kHOOlRTio8IH/GrmxRE5fjllkzdaHclIuNjUQTJYH2xHNIGfdpJkDJUw==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@11.0.3:
     resolution: {integrity: sha512-2Nim7dha1KVkaiF4q6Dj+ngPPMdfvLJEOpZk/jKiUAkqKebpGAWQXAq9z1xu9HKu5lWfqw/FASuccEjyznjPaA==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   glob@9.3.5:
     resolution: {integrity: sha512-e1LleDykUz2Iu+MTYdkSsuWX8lvAjAcs0Xef0lNIu0S2wOAzuTxCJtcd9S3cijlwYF18EsU3rzb8jPVobxDh9Q==}
     engines: {node: '>=16 || 14 >=14.17'}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globals@11.12.0:
     resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
@@ -6689,6 +6720,10 @@ packages:
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
+    engines: {node: '>=0.10.0'}
+
+  iconv-lite@0.7.2:
+    resolution: {integrity: sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==}
     engines: {node: '>=0.10.0'}
 
   idb-keyval@6.2.2:
@@ -7144,6 +7179,15 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
+  libbase64@1.3.0:
+    resolution: {integrity: sha512-GgOXd0Eo6phYgh0DJtjQ2tO8dc0IVINtZJeARPeiIJqge+HdsWSuaDTe8ztQ7j/cONByDZ3zeB325AHiv5O0dg==}
+
+  libmime@5.3.7:
+    resolution: {integrity: sha512-FlDb3Wtha8P01kTL3P9M+ZDNDWPKPmKHWaU/cG/lg5pfuAwdflVpZE+wm9m7pKmC5ww6s+zTxBKS1p6yl3KpSw==}
+
+  libqp@2.1.1:
+    resolution: {integrity: sha512-0Wd+GPz1O134cP62YU2GTOPNA7Qgl09XwCqM5zpBv87ERCXdfDtyKXvV7c9U22yWJh44QZqBocFnXN11K96qow==}
+
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
@@ -7330,6 +7374,9 @@ packages:
 
   magicast@0.3.5:
     resolution: {integrity: sha512-L0WhttDl+2BOsybvEOLK7fW3UA0OQ0IQ2d6Zl2x/a6vVRs3bAY0ECOSHHeL5jD+SbOpOCUEi0y1DgHEn9Qn1AQ==}
+
+  mailparser@3.9.3:
+    resolution: {integrity: sha512-AnB0a3zROum6fLaa52L+/K2SoRJVyFDk78Ea6q1D0ofcZLxWEWDtsS1+OrVqKbV7r5dulKL/AwYQccFGAPpuYQ==}
 
   make-dir@4.0.0:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
@@ -7690,6 +7737,10 @@ packages:
 
   node-releases@2.0.19:
     resolution: {integrity: sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw==}
+
+  nodemailer@7.0.13:
+    resolution: {integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==}
+    engines: {node: '>=6.0.0'}
 
   nopt@7.2.1:
     resolution: {integrity: sha512-taM24ViiimT/XntxbPyJQzCG+p4EKOpgD3mxFwW38mGjVUrfERQOeY4EDHjdnptttfHuHQXFx+lTP08Q+mLa/w==}
@@ -8073,6 +8124,7 @@ packages:
   prebuild-install@7.1.3:
     resolution: {integrity: sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug==}
     engines: {node: '>=10'}
+    deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
     hasBin: true
 
   prelude-ls@1.2.1:
@@ -8722,6 +8774,7 @@ packages:
 
   scmp@2.1.0:
     resolution: {integrity: sha512-o/mRQGk9Rcer/jEEw/yw4mwo3EU/NvYvp577/Btqrym9Qy5/MdWGBqipbALgd2lrdWTJ5/gqDusxfnQBxOxT2Q==}
+    deprecated: Just use Node.js's crypto.timingSafeEqual()
 
   screenfull@5.2.0:
     resolution: {integrity: sha512-9BakfsO2aUQN2K9Fdbj87RJIEZ82Q9IGim7FqM5OsebfoFC6ZHXgDq/KvniuLTPdeM8wY2o6Dj3WQ7KeQCj3cA==}
@@ -9101,6 +9154,7 @@ packages:
   tar@7.4.3:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   test-exclude@6.0.0:
     resolution: {integrity: sha512-cAGWPIyOHU6zlmg88jwm7VRyXnMN7iV68OGAbYDk/Mh/xC/pzVPlQtY6ngoIH/5/tciuhGfvESU8GrHrcxD56w==}
@@ -9173,6 +9227,10 @@ packages:
     resolution: {integrity: sha512-iDVkR2BjAqkTDtFX0h94yVvE2AihCXlF0Q7RIXSJPRSR5I0PA1TMuAg6FHFpmqTn4tPxJ0by0CK7PUMlnFLGEQ==}
     peerDependencies:
       '@tiptap/core': ^2.0.3
+
+  tlds@1.261.0:
+    resolution: {integrity: sha512-QXqwfEl9ddlGBaRFXIvNKK6OhipSiLXuRuLJX5DErz0o0Q0rYxulWLdFryTkV5PkdZct5iMInwYEGe/eR++1AA==}
+    hasBin: true
 
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
@@ -9737,10 +9795,12 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
@@ -9791,6 +9851,9 @@ packages:
   word-wrap@1.2.5:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
+
+  worker-mailer@1.2.1:
+    resolution: {integrity: sha512-gS2ei/mrpRqNs+AHmqxhT6vFPwCLw2qnz5ShmyGD0ULaU0Q9hxnFAcx9jhAip/MnD6+MjgnQu6hQQgA8mlOkVA==}
 
   workerd@1.20250617.0:
     resolution: {integrity: sha512-Uv6p0PYUHp/W/aWfUPLkZVAoAjapisM27JJlwcX9wCPTfCfnuegGOxFMvvlYpmNaX4YCwEdLCwuNn3xkpSkuZw==}
@@ -13766,7 +13829,7 @@ snapshots:
 
   '@types/buffer-from@1.1.3':
     dependencies:
-      '@types/node': 22.15.29
+      '@types/node': 22.13.8
 
   '@types/canvas-confetti@1.9.0': {}
 
@@ -13841,6 +13904,11 @@ snapshots:
       '@types/lodash': 4.17.19
 
   '@types/lodash@4.17.19': {}
+
+  '@types/mailparser@3.4.6':
+    dependencies:
+      '@types/node': 22.13.8
+      iconv-lite: 0.6.3
 
   '@types/markdown-it@13.0.9':
     dependencies:
@@ -14176,6 +14244,12 @@ snapshots:
       tinyrainbow: 2.0.0
 
   '@xobotyi/scrollbar-width@1.9.5': {}
+
+  '@zone-eu/mailsplit@5.4.8':
+    dependencies:
+      libbase64: 1.3.0
+      libmime: 5.3.7
+      libqp: 2.1.1
 
   abbrev@2.0.0: {}
 
@@ -14590,6 +14664,10 @@ snapshots:
   canvas-confetti@1.9.3: {}
 
   ccount@2.0.1: {}
+
+  cf-imap@0.0.12(typescript@5.8.3):
+    dependencies:
+      typescript: 5.8.3
 
   chai@4.5.0:
     dependencies:
@@ -15210,6 +15288,8 @@ snapshots:
   emojibase@16.0.0: {}
 
   encodeurl@2.0.0: {}
+
+  encoding-japanese@2.2.0: {}
 
   encoding-sniffer@0.2.1:
     dependencies:
@@ -16275,6 +16355,10 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
+  iconv-lite@0.7.2:
+    dependencies:
+      safer-buffer: 2.1.2
+
   idb-keyval@6.2.2: {}
 
   ieee754@1.2.1: {}
@@ -16720,6 +16804,17 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
+  libbase64@1.3.0: {}
+
+  libmime@5.3.7:
+    dependencies:
+      encoding-japanese: 2.2.0
+      iconv-lite: 0.6.3
+      libbase64: 1.3.0
+      libqp: 2.1.1
+
+  libqp@2.1.1: {}
+
   lie@3.3.0:
     dependencies:
       immediate: 3.0.6
@@ -16890,6 +16985,19 @@ snapshots:
       '@babel/parser': 7.27.7
       '@babel/types': 7.27.7
       source-map-js: 1.2.1
+
+  mailparser@3.9.3:
+    dependencies:
+      '@zone-eu/mailsplit': 5.4.8
+      encoding-japanese: 2.2.0
+      he: 1.2.0
+      html-to-text: 9.0.5
+      iconv-lite: 0.7.2
+      libmime: 5.3.7
+      linkify-it: 5.0.0
+      nodemailer: 7.0.13
+      punycode.js: 2.3.1
+      tlds: 1.261.0
 
   make-dir@4.0.0:
     dependencies:
@@ -17410,6 +17518,8 @@ snapshots:
       whatwg-url: 5.0.0
 
   node-releases@2.0.19: {}
+
+  nodemailer@7.0.13: {}
 
   nopt@7.2.1:
     dependencies:
@@ -19143,6 +19253,8 @@ snapshots:
       markdown-it-task-lists: 2.1.1
       prosemirror-markdown: 1.13.2
 
+  tlds@1.261.0: {}
+
   to-regex-range@5.0.1:
     dependencies:
       is-number: 7.0.0
@@ -19854,6 +19966,8 @@ snapshots:
       stackback: 0.0.2
 
   word-wrap@1.2.5: {}
+
+  worker-mailer@1.2.1: {}
 
   workerd@1.20250617.0:
     optionalDependencies:

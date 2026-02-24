@@ -128,7 +128,7 @@ export const connection = createTable(
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
     scope: text('scope').notNull(),
-    providerId: text('provider_id').$type<'google' | 'microsoft'>().notNull(),
+    providerId: text('provider_id').$type<'google' | 'microsoft' | 'imap'>().notNull(),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
@@ -321,4 +321,50 @@ export const emailTemplate = createTable(
     index('idx_mail0_email_template_user_id').on(t.userId),
     unique('mail0_email_template_user_id_name_unique').on(t.userId, t.name),
   ],
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IMAP/SMTP Configuration Table
+// Stores connection details for custom IMAP/SMTP email accounts
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ImapSyncCursor = {
+  highestUid: number;
+  uidValidity: number;
+  modSeq?: string;
+};
+
+export const imapSmtpConfig = createTable(
+  'imap_smtp_config',
+  {
+    id: text('id').primaryKey(),
+    connectionId: text('connection_id')
+      .notNull()
+      .references(() => connection.id, { onDelete: 'cascade' })
+      .unique(),
+    // IMAP settings
+    imapHost: text('imap_host').notNull(),
+    imapPort: integer('imap_port').notNull().default(993),
+    imapSecure: boolean('imap_secure').notNull().default(true),
+    // SMTP settings
+    smtpHost: text('smtp_host').notNull(),
+    smtpPort: integer('smtp_port').notNull().default(587),
+    smtpSecure: boolean('smtp_secure').notNull().default(false),
+    smtpRequireTls: boolean('smtp_require_tls').notNull().default(true),
+    // Shared auth (username = email address)
+    imapUsername: text('imap_username').notNull(),
+    // Password encrypted with AES-256-GCM — NEVER store plaintext
+    encryptedPassword: text('encrypted_password').notNull(),
+    // Folder paths discovered via RFC 6154 special-use or regex fallback
+    sentFolder: text('sent_folder').notNull().default('Sent'),
+    trashFolder: text('trash_folder').notNull().default('Trash'),
+    draftsFolder: text('drafts_folder').notNull().default('Drafts'),
+    spamFolder: text('spam_folder').notNull().default('Junk'),
+    // Sync state
+    syncCursor: jsonb('sync_cursor').$type<ImapSyncCursor | null>().default(null),
+    lastSyncAt: timestamp('last_sync_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('imap_smtp_config_connection_id_idx').on(t.connectionId)],
 );

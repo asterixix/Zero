@@ -9,7 +9,7 @@ import {
 import { useBilling } from '@/hooks/use-billing';
 import { emailProviders } from '@/lib/constants';
 import { authClient } from '@/lib/auth-client';
-import { Plus, UserPlus, Server } from 'lucide-react';
+import { UserPlus, Server } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { m } from '@/paraglide/messages';
 import { motion } from 'motion/react';

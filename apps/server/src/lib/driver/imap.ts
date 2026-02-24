@@ -1,5 +1,5 @@
-import type { IOutgoingMessage, Label, ParsedMessage, DeleteAllSpamResponse } from '../../types';
-import { buildParsedMessage, discoverFolders, type DiscoveredFolders } from './imap-utils';
+import type { IOutgoingMessage, Label, DeleteAllSpamResponse } from '../../types';
+import { buildParsedMessage, type DiscoveredFolders } from './imap-utils';
 import type { MailManager, ManagerConfig, IGetThreadResponse, ParsedDraft } from './types';
 import type { CreateDraftData } from '../schemas';
 import { WorkerMailer } from 'worker-mailer';

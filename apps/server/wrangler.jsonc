@@ -296,6 +296,10 @@
             "name": "SHARD_REGISTRY",
             "class_name": "ShardRegistry",
           },
+          {
+            "name": "IMAP_SYNC_WORKER",
+            "class_name": "ImapSyncWorker",
+          },
 
         ],
       },

@@ -9,8 +9,8 @@ import {
 import { useBilling } from '@/hooks/use-billing';
 import { emailProviders } from '@/lib/constants';
 import { authClient } from '@/lib/auth-client';
-import { Plus, UserPlus } from 'lucide-react';
-import { useLocation } from 'react-router';
+import { Plus, UserPlus, Server } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router';
 import { m } from '@/paraglide/messages';
 import { motion } from 'motion/react';
 import { Button } from '../ui/button';
@@ -34,6 +34,7 @@ export const AddConnectionDialog = ({
     return (connections?.unlimited && !connections?.remaining) || (connections?.remaining ?? 0) > 0;
   }, [connections]);
   const pathname = useLocation().pathname;
+  const navigate = useNavigate();
 
   const handleUpgrade = async () => {
     if (attach) {
@@ -130,11 +131,16 @@ export const AddConnectionDialog = ({
             whileTap={{ scale: 0.97 }}
           >
             <Button
+              disabled={!canCreateConnection}
               variant="outline"
-              className="h-24 w-full flex-col items-center justify-center gap-2 border-dashed"
+              className="h-24 w-full flex-col items-center justify-center gap-2"
+              onClick={() => {
+                if (onOpenChange) onOpenChange(false);
+                navigate('/settings/connections/imap-setup');
+              }}
             >
-              <Plus className="h-12 w-12" />
-              <span className="text-xs">{m['pages.settings.connections.moreComingSoon']()}</span>
+              <Server className="size-6!" />
+              <span className="text-xs">IMAP / SMTP</span>
             </Button>
           </motion.div>
         </motion.div>

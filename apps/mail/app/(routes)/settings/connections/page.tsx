@@ -16,7 +16,7 @@ import { useConnections } from '@/hooks/use-connections';
 import { useTRPC } from '@/providers/query-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMutation } from '@tanstack/react-query';
-import { Trash, Plus, Unplug } from 'lucide-react';
+import { Trash, Plus, Unplug, Server } from 'lucide-react';
 import { useThreads } from '@/hooks/use-threads';
 import { useBilling } from '@/hooks/use-billing';
 import { emailProviders } from '@/lib/constants';
@@ -81,7 +81,7 @@ export default function ConnectionsPage() {
           ) : data?.connections?.length ? (
             <div className="lg: grid gap-4 sm:grid-cols-1 md:grid-cols-2">
               {data.connections.map((connection) => {
-                const Icon = emailProviders.find(
+                const Icon = connection.providerId === "imap" ? Server : emailProviders.find(
                   (p) => p.providerId === connection.providerId,
                 )?.icon;
                 return (

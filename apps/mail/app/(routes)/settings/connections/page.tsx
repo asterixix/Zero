@@ -83,8 +83,7 @@ export default function ConnectionsPage() {
               {data.connections.map((connection) => {
                 const Icon = connection.providerId === "imap" ? Server : emailProviders.find(
                   (p) => p.providerId === connection.providerId,
-                )?.icon;
-                return (
+                )?.icon;                return (
                   <div
                     key={connection.id}
                     className="bg-popover flex items-center justify-between rounded-lg border p-4"

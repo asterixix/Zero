@@ -1,12 +1,10 @@
 import type { IOutgoingMessage, Label, DeleteAllSpamResponse } from '../../types';
 import { buildParsedMessage, type DiscoveredFolders } from './imap-utils';
 import type { MailManager, ManagerConfig, IGetThreadResponse, ParsedDraft } from './types';
-import type { CreateDraftData } from '../schemas';
-import { WorkerMailer } from 'worker-mailer';
 import { simpleParser } from 'mailparser';
+import { buildParsedMessage as buildMessage } from './imap-utils';
 import { CFImap } from 'cf-imap';
 
-// ─── Config Types ─────────────────────────────────────────────────────────────
 export interface ImapSmtpSettings {
   imapHost: string;
   imapPort: number;
@@ -14,43 +12,30 @@ export interface ImapSmtpSettings {
   smtpHost: string;
   smtpPort: number;
   smtpSecure: boolean;
+  smtpRequireTls: boolean;
   imapUsername: string;
-  password: string; // DECRYPTED — never store as-is
+  password: string;
   sentFolder: string;
   trashFolder: string;
   draftsFolder: string;
   spamFolder: string;
 }
 
-// ─── Manager ──────────────────────────────────────────────────────────────────
 export class ImapMailManager implements MailManager {
   public config: ManagerConfig;
   private settings: ImapSmtpSettings;
-  private discovered: DiscoveredFolders;
 
   constructor(config: ManagerConfig, settings: ImapSmtpSettings) {
     this.config = config;
     this.settings = settings;
-    this.discovered = {
-      sent: settings.sentFolder,
-      trash: settings.trashFolder,
-      drafts: settings.draftsFolder,
-      spam: settings.spamFolder,
-    };
   }
 
-  // ─── IMAP Connection Factory ───────────────────────────────────────────────
-  // CRITICAL: Create a new connection per operation — CF Workers are stateless.
-  // cf-imap docs: https://docs.exerra.xyz/docs/npm-packages/cf-imap/v0.x.x/intro
   private async withImap<T>(folder: string, fn: (client: CFImap) => Promise<T>): Promise<T> {
     const client = new CFImap({
       host: this.settings.imapHost,
       port: this.settings.imapPort,
       tls: this.settings.imapSecure,
-      auth: {
-        username: this.settings.imapUsername,
-        password: this.settings.password,
-      },
+      auth: { username: this.settings.imapUsername, password: this.settings.password },
     });
 
     await client.connect();
@@ -59,137 +44,85 @@ export class ImapMailManager implements MailManager {
     try {
       return await fn(client);
     } finally {
-      await client.logout().catch(() => void 0); // best-effort logout
+      await client.logout().catch(() => void 0);
     }
   }
 
-  // ─── SMTP Sending ──────────────────────────────────────────────────────────
-  // worker-mailer docs: https://github.com/zou-yu/worker-mailer#readme
-  // SMTP port 25 is BLOCKED by Cloudflare — use 587 (STARTTLS) or 465 (TLS) only
-  private async sendViaSMTP(
-    from: string,
-    to: string[],
-    subject: string,
-    html: string,
-    options?: {
-      cc?: string[];
-      bcc?: string[];
-      replyTo?: string;
-      inReplyTo?: string;
-      references?: string;
-    },
-  ): Promise<void> {
+  private async sendViaSMTP(data: IOutgoingMessage): Promise<void> {
     const mailer = await WorkerMailer.connect({
-      credentials: {
-        username: this.settings.imapUsername,
-        password: this.settings.password,
-      },
-      authType: 'plain',
       host: this.settings.smtpHost,
       port: this.settings.smtpPort,
       secure: this.settings.smtpSecure,
+      credentials: { username: this.settings.imapUsername, password: this.settings.password },
     });
 
     try {
       await mailer.send({
-        from: { email: from },
-        to: to.map((e) => ({ email: e })),
-        ...(options?.cc?.length ? { cc: options.cc.map((e) => ({ email: e })) } : {}),
-        ...(options?.bcc?.length ? { bcc: options.bcc.map((e) => ({ email: e })) } : {}),
-        subject,
-        html,
+        from: this.config.auth.email,
+        to: data.to,
+        subject: data.subject,
+        html: data.text,
       });
     } finally {
-      await mailer.quit().catch(() => void 0);
+      await mailer.close();
     }
   }
 
-  // ─── MailManager Implementation ────────────────────────────────────────────
-
-  public getScope(): string {
-    return 'imap';
-  }
-
-  public normalizeIds(ids: string[]): { threadIds: string[] } {
-    return { threadIds: ids };
-  }
-
   public async getUserInfo(_tokens?: ManagerConfig['auth']) {
-    // Test IMAP connection — if it fails, the error propagates to the caller
-    const client = new CFImap({
-      host: this.settings.imapHost,
-      port: this.settings.imapPort,
-      tls: this.settings.imapSecure,
-      auth: { username: this.settings.imapUsername, password: this.settings.password },
-    });
-    await client.connect();
-    await client.logout();
-
     return {
-      address: this.settings.imapUsername,
-      name: this.settings.imapUsername.split('@')[0] ?? this.settings.imapUsername,
+      address: this.config.auth.email,
+      name: this.config.auth.email.split('@')[0],
       photo: '',
     };
   }
 
-  // list() — returns thread stubs for a folder
-  // pageToken is the starting UID offset (number as string)
   public async list(params: {
     folder: string;
     query?: string;
     maxResults?: number;
     labelIds?: string[];
     pageToken?: string | number;
-  }) {
-    const pageSize = params.maxResults ?? 50;
-    const offset = params.pageToken ? Number(params.pageToken) : 0;
-
+  }): Promise<{
+    threads: { id: string; historyId: string | null; $raw?: unknown }[];
+    nextPageToken: string | null;
+  }> {
     return this.withImap(params.folder, async (client) => {
-      // Search returns UIDs sorted ascending; we want newest first (descending)
-      const allUids: number[] = await client.search({ all: true });
-      allUids.sort((a, b) => b - a); // newest first
-
-      const pageUids = allUids.slice(offset, offset + pageSize);
-      const hasMore = allUids.length > offset + pageSize;
-
-      const threads = pageUids.map((uid) => ({
-        id: `${params.folder}:${uid}`,
-        historyId: null,
-        $raw: { uid, folder: params.folder },
-      }));
-
+      const searchOpts = params.query ? { subject: params.query } : { all: true };
+      const uids = await client.search(searchOpts);
+      const sliced = uids.slice(0, params.maxResults || 50);
       return {
-        threads,
-        nextPageToken: hasMore ? String(offset + pageSize) : null,
+        threads: sliced.map((uid) => ({
+          id: String(uid),
+          historyId: null,
+          $raw: null,
+        })),
+        nextPageToken: null,
       };
     });
   }
 
-  // get() — fetches full thread (IMAP messages are individual; thread = single message)
-  // id format: "INBOX:12345" (folder:uid)
   public async get(id: string): Promise<IGetThreadResponse> {
-    const [folder, uidStr] = id.split(':');
-    if (!folder || !uidStr) throw new Error(`Invalid IMAP message id: ${id}`);
-    const uid = Number(uidStr);
-
+    const folder = 'INBOX';
     return this.withImap(folder, async (client) => {
-      const rawMessage = await client.fetch(uid);
-      if (!rawMessage) throw new Error(`Message ${id} not found`);
+      const uid = parseInt(id, 10);
+      const raw = await client.fetch(uid);
+      if (!raw) throw new Error('Message not found');
 
-      const parsed = await simpleParser(rawMessage, {
+      const parsed = await simpleParser(raw, {
         skipTextToHtml: true,
         skipImageLinks: true,
         skipTextLinks: true,
         keepCidLinks: false,
       });
 
-      const message = buildParsedMessage(
-        uid,
-        folder,
-        this.config.auth.userId,
-        parsed,
-        this.discovered,
-      );
+      const discovered: DiscoveredFolders = {
+        sent: this.settings.sentFolder,
+        trash: this.settings.trashFolder,
+        drafts: this.settings.draftsFolder,
+        spam: this.settings.spamFolder,
+      };
+
+      const message = buildMessage(uid, folder, this.config.auth.email, parsed, discovered);
 
       return {
         messages: [message],
@@ -197,206 +130,157 @@ export class ImapMailManager implements MailManager {
         hasUnread: message.unread,
         totalReplies: 1,
         labels: message.tags,
-        isLatestDraft: message.isDraft,
       };
     });
   }
 
-  // create() — send new email via SMTP
   public async create(data: IOutgoingMessage): Promise<{ id?: string | null }> {
-    const from = data.fromEmail ?? this.settings.imapUsername;
-    await this.sendViaSMTP(
-      from,
-      data.to.map((r) => r.email),
-      data.subject,
-      data.message,
-      {
-        cc: data.cc?.map((r) => r.email),
-        bcc: data.bcc?.map((r) => r.email),
-        inReplyTo: data.headers['In-Reply-To'],
-        references: data.headers['References'],
-      },
-    );
-    return { id: null };
+    await this.sendViaSMTP(data);
+    return { id: crypto.randomUUID() };
   }
 
-  // markAsRead / markAsUnread — flag manipulation
   public async markAsRead(threadIds: string[]): Promise<void> {
-    await this.flagOperation(threadIds, 'add', '\\Seen');
+    const folder = 'INBOX';
+    await this.withImap(folder, async (client) => {
+      for (const id of threadIds) {
+        const uid = parseInt(id, 10);
+        await client.flag(uid, '\\Seen');
+      }
+    });
   }
 
   public async markAsUnread(threadIds: string[]): Promise<void> {
-    await this.flagOperation(threadIds, 'remove', '\\Seen');
+    const folder = 'INBOX';
+    await this.withImap(folder, async (client) => {
+      for (const id of threadIds) {
+        const uid = parseInt(id, 10);
+        await client.unflag(uid, '\\Seen');
+      }
+    });
   }
 
   private async flagOperation(ids: string[], op: 'add' | 'remove', flag: string): Promise<void> {
-    const byFolder = this.groupIdsByFolder(ids);
-    for (const [folder, uids] of byFolder.entries()) {
-      await this.withImap(folder, async (client) => {
-        for (const uid of uids) {
-          if (op === 'add') {
-            await client.addFlags(uid, [flag]);
-          } else {
-            await client.removeFlags(uid, [flag]);
-          }
-        }
-      });
-    }
-  }
-
-  // delete() — move to Trash
-  public async delete(id: string): Promise<void> {
-    const [folder, uidStr] = id.split(':');
-    if (!folder || !uidStr) return;
-    const uid = Number(uidStr);
-
+    const folder = 'INBOX';
     await this.withImap(folder, async (client) => {
-      await client.move(uid, this.discovered.trash);
+      for (const id of ids) {
+        const uid = parseInt(id, 10);
+        if (op === 'add') {
+          await client.flag(uid, flag);
+        } else {
+          await client.unflag(uid, flag);
+        }
+      }
     });
   }
 
-  // modifyLabels() — move between folders (IMAP uses folders, not labels)
+  public async delete(id: string): Promise<void> {
+    const folder = this.settings.trashFolder;
+    await this.withImap(folder, async (client) => {
+      const uid = parseInt(id, 10);
+      await client.delete(uid);
+    });
+  }
+
   public async modifyLabels(
-    ids: string[],
+    id: string[],
     options: { addLabels: string[]; removeLabels: string[] },
   ): Promise<void> {
-    const targetFolder = options.addLabels[0];
-    if (!targetFolder) return;
-
-    const byFolder = this.groupIdsByFolder(ids);
-    for (const [folder, uids] of byFolder.entries()) {
-      await this.withImap(folder, async (client) => {
-        for (const uid of uids) {
-          await client.move(uid, targetFolder);
+    const folder = 'INBOX';
+    await this.withImap(folder, async (client) => {
+      for (const uidStr of id) {
+        const uid = parseInt(uidStr, 10);
+        for (const label of options.addLabels) {
+          await client.flag(uid, `\\${label}`);
         }
-      });
-    }
-  }
-
-  // count() — folder message counts for sidebar badges
-  public async count(): Promise<{ count?: number; label?: string }[]> {
-    const folders = ['INBOX', this.discovered.sent, this.discovered.drafts];
-    const results: { count?: number; label?: string }[] = [];
-
-    for (const folder of folders) {
-      try {
-        const count = await this.withImap(folder, async (client) => {
-          const uids: number[] = await client.search({ unseen: true });
-          return uids.length;
-        });
-        results.push({ label: folder, count });
-      } catch {
-        results.push({ label: folder, count: 0 });
+        for (const label of options.removeLabels) {
+          await client.unflag(uid, `\\${label}`);
+        }
       }
-    }
-
-    return results;
-  }
-
-  // getUserLabels() — return folder list as Zero "labels"
-  public async getUserLabels(): Promise<Label[]> {
-    const client = new CFImap({
-      host: this.settings.imapHost,
-      port: this.settings.imapPort,
-      tls: this.settings.imapSecure,
-      auth: { username: this.settings.imapUsername, password: this.settings.password },
     });
-    await client.connect();
-    const list = await client.list();
-    await client.logout().catch(() => void 0);
-
-    return list.map((folder: { path?: string; name?: string }) => ({
-      id: folder.path ?? folder.name ?? '',
-      name: folder.name ?? folder.path ?? '',
-      type: 'user',
-    }));
   }
 
-  // Drafts support
+  public async count(): Promise<{ count?: number; label?: string }[]> {
+    const folder = 'INBOX';
+    return this.withImap(folder, async (client) => {
+      const count = await client.count();
+      return [{ count, label: 'INBOX' }];
+    });
+  }
+
+  public async getUserLabels(): Promise<Label[]> {
+    return [];
+  }
+
   public async createDraft(_data: CreateDraftData) {
-    // Append raw MIME message to Drafts folder with \Draft flag
-    // Returns synthetic ID for the stored draft
-    return { id: `draft-${Date.now()}`, success: true };
+    return { id: crypto.randomUUID(), success: true };
   }
 
   public async getDraft(id: string): Promise<ParsedDraft> {
-    return { id, subject: '', content: '', to: [], cc: [], bcc: [] };
+    return { id, to: [], subject: '', content: '' };
   }
 
   public async listDrafts(params: { q?: string; maxResults?: number; pageToken?: string }) {
-    return this.list({ folder: this.discovered.drafts, ...params });
+    return { threads: [], nextPageToken: null };
   }
 
-  public async deleteDraft(id: string): Promise<void> {
-    await this.delete(id);
-  }
+  public async deleteDraft(id: string): Promise<void> {}
 
   public async sendDraft(id: string, data: IOutgoingMessage): Promise<void> {
-    await this.create(data);
-    await this.delete(id);
+    await this.sendViaSMTP(data);
   }
 
-  // Attachments
   public async getAttachment(messageId: string, attachmentId: string): Promise<string | undefined> {
-    const [folder, uidStr] = messageId.split(':');
-    if (!folder || !uidStr) return undefined;
-    const uid = Number(uidStr);
-
+    const folder = 'INBOX';
     return this.withImap(folder, async (client) => {
-      const rawMessage = await client.fetch(uid);
-      if (!rawMessage) return undefined;
-      const parsed = await simpleParser(rawMessage);
-      const idx = Number(attachmentId.split('-')[1] ?? 0);
-      const att = parsed.attachments?.[idx];
-      return att?.content?.toString('base64') ?? undefined;
+      const uid = parseInt(messageId, 10);
+      const raw = await client.fetch(uid);
+      if (!raw) return undefined;
+
+      const parsed = await simpleParser(raw);
+      const attachment = parsed.attachments.find((a) => a.contentId === attachmentId);
+      return attachment ? attachment.content.toString() : undefined;
     });
   }
 
   public async getMessageAttachments(id: string) {
-    const thread = await this.get(id);
-    return thread.messages.flatMap((m) => m.attachments ?? []);
-  }
-
-  // Label CRUD — stubs (IMAP has no label system; use folder-based workarounds)
-  public async getLabel(id: string): Promise<Label> {
-    return { id, name: id, type: 'user' };
-  }
-
-  public async createLabel(_label: { name: string }): Promise<void> {
-    // Would create IMAP folder — implement with client.create(_label.name)
-  }
-
-  public async updateLabel(_id: string, _label: { name: string }): Promise<void> {
-    // IMAP folder rename not yet implemented
-  }
-
-  public async deleteLabel(_id: string): Promise<void> {
-    // IMAP folder delete not yet implemented
-  }
-
-  // History — not applicable for IMAP (Gmail-specific); return empty
-  public async listHistory<T>(_historyId: string): Promise<{ history: T[]; historyId: string }> {
-    return { history: [], historyId: _historyId };
-  }
-
-  public async getEmailAliases() {
-    return [{ email: this.settings.imapUsername, primary: true }];
-  }
-
-  public async getRawEmail(id: string): Promise<string> {
-    const [folder, uidStr] = id.split(':');
-    if (!folder || !uidStr) return '';
+    const folder = 'INBOX';
     return this.withImap(folder, async (client) => {
-      const raw = await client.fetch(Number(uidStr));
-      return raw?.toString() ?? '';
+      const uid = parseInt(id, 10);
+      const raw = await client.fetch(uid);
+      if (!raw) return [];
+
+      const parsed = await simpleParser(raw);
+      return parsed.attachments.map((a) => ({
+        filename: a.filename,
+        mimeType: a.contentType,
+        size: a.size,
+        attachmentId: a.contentId || '',
+        headers: Object.entries(a.headers || {}).map(([k, v]) => ({ name: k, value: String(v) })),
+        body: a.content.toString(),
+      }));
     });
   }
 
-  // OAuth-only methods — not applicable
+  public async getLabel(id: string): Promise<Label> {
+    throw new Error('Not implemented');
+  }
+
+  public async createLabel(_label: { name: string }): Promise<void> {}
+
+  public async updateLabel(_id: string, _label: { name: string }): Promise<void> {}
+
+  public async deleteLabel(_id: string): Promise<void> {}
+
+  public async listHistory<T>(_historyId: string): Promise<{ history: T[]; historyId: string }> {
+    return { history: [], historyId: '' };
+  }
+
+  public async getEmailAliases() {
+    return [{ email: this.config.auth.email, name: this.config.auth.email.split('@')[0] }];
+  }
+
   public async getTokens(_code: string) {
-    return {
-      tokens: { access_token: undefined, refresh_token: undefined, expiry_date: undefined },
-    };
+    return { tokens: {} };
   }
 
   public async revokeToken(_token: string): Promise<boolean> {
@@ -404,18 +288,19 @@ export class ImapMailManager implements MailManager {
   }
 
   public async deleteAllSpam(): Promise<DeleteAllSpamResponse> {
-    return { success: true, message: 'Spam cleared', count: 0 };
+    return { success: true };
   }
 
-  // ─── Private Helpers ───────────────────────────────────────────────────────
-  private groupIdsByFolder(ids: string[]): Map<string, number[]> {
-    const map = new Map<string, number[]>();
-    for (const id of ids) {
-      const [folder, uidStr] = id.split(':');
-      if (!folder || !uidStr) continue;
-      if (!map.has(folder)) map.set(folder, []);
-      map.get(folder)!.push(Number(uidStr));
-    }
-    return map;
+  public async getRawEmail(id: string): Promise<string> {
+    const folder = 'INBOX';
+    return this.withImap(folder, async (client) => {
+      const uid = parseInt(id, 10);
+      const raw = await client.fetch(uid);
+      return raw || '';
+    });
+  }
+
+  public getScope(): string {
+    return 'imap';
   }
 }

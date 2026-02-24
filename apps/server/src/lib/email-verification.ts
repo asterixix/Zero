@@ -1,4 +1,3 @@
-import { promises as dns } from 'dns';
 import { createVerify, createHash } from 'crypto';
 
 const getHeader = (raw: string, name: string): string => {

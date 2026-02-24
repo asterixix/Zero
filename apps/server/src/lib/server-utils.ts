@@ -1,11 +1,11 @@
 import type { IGetThreadResponse, IGetThreadsResponse } from './driver/types';
 import { OutgoingMessageType } from '../routes/agent/types';
 import { getContext } from 'hono/context-storage';
-import { connection } from '../db/schema';
+import { connection, imapSmtpConfig } from '../db/schema';
 import { defaultPageSize } from './utils';
 import type { HonoContext } from '../ctx';
 import { createClient } from 'dormroom';
-import { createDriver } from './driver';
+import { createDriver, createImapDriver } from './driver';
 import { eq } from 'drizzle-orm';
 import { createDb } from '../db';
 import { Effect } from 'effect';
@@ -573,7 +573,53 @@ export const getActiveConnection = async () => {
   return firstConnection;
 };
 
-export const connectionToDriver = (activeConnection: typeof connection.$inferSelect) => {
+export const connectionToDriver = async (activeConnection: typeof connection.$inferSelect) => {
+  // IMAP connections don't use OAuth tokens — load settings from DB
+  if (activeConnection.providerId === 'imap') {
+    const { db, conn } = createDb(env.HYPERDRIVE.connectionString);
+    try {
+      const [config] = await db
+        .select()
+        .from(imapSmtpConfig)
+        .where(eq(imapSmtpConfig.connectionId, activeConnection.id))
+        .limit(1);
+
+      if (!config) {
+        throw new Error(`No IMAP/SMTP config found for connection ${activeConnection.id}`);
+      }
+
+      const password = await decryptPassword(config.encryptedPassword, env.IMAP_ENCRYPTION_KEY);
+
+      return createImapDriver(
+        {
+          auth: {
+            userId: activeConnection.userId,
+            accessToken: '',
+            refreshToken: '',
+            email: activeConnection.email,
+          },
+        },
+        {
+          imapHost: config.imapHost,
+          imapPort: config.imapPort,
+          imapSecure: config.imapSecure,
+          smtpHost: config.smtpHost,
+          smtpPort: config.smtpPort,
+          smtpSecure: config.smtpSecure,
+          imapUsername: config.imapUsername,
+          password,
+          sentFolder: config.sentFolder,
+          trashFolder: config.trashFolder,
+          draftsFolder: config.draftsFolder,
+          spamFolder: config.spamFolder,
+        },
+      );
+    } finally {
+      await conn.end();
+    }
+  }
+
+  // OAuth providers — require tokens
   if (!activeConnection.accessToken || !activeConnection.refreshToken) {
     throw new Error(`Invalid connection ${JSON.stringify(activeConnection?.id)}`);
   }
@@ -586,6 +632,38 @@ export const connectionToDriver = (activeConnection: typeof connection.$inferSel
       email: activeConnection.email,
     },
   });
+};
+
+export const encryptPassword = async (plaintext: string, key: string): Promise<string> => {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(key),
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt'],
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(plaintext);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, keyMaterial, encoded);
+  const combined = new Uint8Array(iv.length + new Uint8Array(ciphertext).byteLength);
+  combined.set(iv);
+  combined.set(new Uint8Array(ciphertext), iv.length);
+  return btoa(String.fromCharCode(...combined));
+};
+
+export const decryptPassword = async (encrypted: string, key: string): Promise<string> => {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(key),
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt'],
+  );
+  const data = Uint8Array.from(atob(encrypted), (c) => c.charCodeAt(0));
+  const iv = data.slice(0, 12);
+  const ciphertext = data.slice(12);
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, keyMaterial, ciphertext);
+  return new TextDecoder().decode(decrypted);
 };
 
 export const verifyToken = async (token: string) => {

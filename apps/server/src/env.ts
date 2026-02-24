@@ -1,4 +1,4 @@
-import type { ThinkingMCP, ThreadSyncWorker, WorkflowRunner, ZeroDB, ZeroMCP } from './main';
+import type { ImapSyncWorker, ThinkingMCP, ThreadSyncWorker, WorkflowRunner, ZeroDB, ZeroMCP } from './main';
 import type { ShardRegistry, ZeroAgent, ZeroDriver } from './routes/agent';
 
 import { env as _env } from 'cloudflare:workers';
@@ -14,6 +14,7 @@ export type ZeroEnv = {
   WORKFLOW_RUNNER: DurableObjectNamespace<WorkflowRunner & QueryableHandler>;
 
   THREAD_SYNC_WORKER: DurableObjectNamespace<ThreadSyncWorker>;
+  IMAP_SYNC_WORKER: DurableObjectNamespace<ImapSyncWorker>;
   SYNC_THREADS_WORKFLOW: Workflow;
   SYNC_THREADS_COORDINATOR_WORKFLOW: Workflow;
   HYPERDRIVE: { connectionString: string };
@@ -102,6 +103,7 @@ export type ZeroEnv = {
   DD_API_KEY: string;
   DD_APP_KEY: string;
   DD_SITE: string;
+  IMAP_ENCRYPTION_KEY: string;
 };
 
 const env = _env as ZeroEnv;

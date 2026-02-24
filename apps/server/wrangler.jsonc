@@ -67,6 +67,10 @@
             "name": "SHARD_REGISTRY",
             "class_name": "ShardRegistry",
           },
+          {
+            "name": "IMAP_SYNC_WORKER",
+            "class_name": "ImapSyncWorker",
+          },
         ],
       },
       "workflows": [
@@ -145,6 +149,10 @@
           "tag": "v9",
           "new_sqlite_classes": ["ShardRegistry"],
         },
+        {
+          "tag": "v10",
+          "new_sqlite_classes": ["ImapSyncWorker"],
+        },
 
       ],
 
@@ -182,6 +190,7 @@
         "DD_API_KEY": "",
         "DD_APP_KEY": "",
         "DD_SITE": "datadoghq.com",
+        "IMAP_ENCRYPTION_KEY": "",
       },
       "kv_namespaces": [
         {
@@ -376,6 +385,10 @@
           "tag": "v10",
           "new_sqlite_classes": ["ShardRegistry"],
         },
+        {
+          "tag": "v11",
+          "new_sqlite_classes": ["ImapSyncWorker"],
+        },
 
       ],
       "observability": {
@@ -403,6 +416,7 @@
         "DD_API_KEY": "",
         "DD_APP_KEY": "",
         "DD_SITE": "datadoghq.com",
+        "IMAP_ENCRYPTION_KEY": "",
       },
       "kv_namespaces": [
         {
@@ -521,6 +535,10 @@
             "name": "SHARD_REGISTRY",
             "class_name": "ShardRegistry",
           },
+          {
+            "name": "IMAP_SYNC_WORKER",
+            "class_name": "ImapSyncWorker",
+          },
 
         ],
       },
@@ -604,6 +622,10 @@
           "tag": "v10",
           "new_sqlite_classes": ["ShardRegistry"],
         },
+        {
+          "tag": "v11",
+          "new_sqlite_classes": ["ImapSyncWorker"],
+        },
 
       ],
       "vars": {
@@ -621,6 +643,7 @@
         "DD_API_KEY": "",
         "DD_APP_KEY": "",
         "DD_SITE": "datadoghq.com",
+        "IMAP_ENCRYPTION_KEY": "",
       },
       "kv_namespaces": [
         {

@@ -19,7 +19,7 @@ export class ThreadSyncWorker extends DurableObject<ZeroEnv> {
     connection: typeof connectionSchema.$inferSelect,
     threadId: string,
   ): Promise<ParsedMessage | undefined> {
-    const driver = connectionToDriver(connection);
+    const driver = await connectionToDriver(connection);
     if (!driver) throw new Error('No driver available');
 
     const thread = await Effect.runPromise(

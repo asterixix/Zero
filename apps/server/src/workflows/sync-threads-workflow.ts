@@ -98,7 +98,7 @@ export class SyncThreadsWorkflow extends WorkflowEntrypoint<ZeroEnv, SyncThreads
       shouldLoop: boolean;
       foundConnection: any;
     };
-    const driver = connectionToDriver(foundConnection);
+    const driver = await connectionToDriver(foundConnection);
 
     if (connectionId.includes('aggregate')) {
       console.info(`[SyncThreadsWorkflow] Skipping sync for aggregate instance - folder ${folder}`);

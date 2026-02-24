@@ -707,7 +707,7 @@ export class ZeroDriver extends DurableObject<ZeroEnv> {
         where: eq(connection.id, this.name),
       });
       if (_connection) {
-        this.driver = connectionToDriver(_connection);
+        this.driver = await connectionToDriver(_connection);
         this.connection = _connection;
       }
       this.ctx.waitUntil(conn.end());

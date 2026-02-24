@@ -27,6 +27,7 @@ import { getZeroAgent, getZeroDB, verifyToken } from './lib/server-utils';
 import { SyncThreadsWorkflow } from './workflows/sync-threads-workflow';
 import { ShardRegistry, ZeroAgent, ZeroDriver } from './routes/agent';
 import { ThreadSyncWorker } from './routes/agent/sync-worker';
+import { ImapSyncWorker } from './routes/agent/imap-sync-worker';
 import { oAuthDiscoveryMetadata } from 'better-auth/plugins';
 import { EProviders, type IEmailSendBatch } from './types';
 import { eq, and, desc, asc, inArray } from 'drizzle-orm';
@@ -1255,6 +1256,7 @@ export {
   ThinkingMCP,
   WorkflowRunner,
   ThreadSyncWorker,
+  ImapSyncWorker,
   SyncThreadsWorkflow,
   SyncThreadsCoordinatorWorkflow,
   ShardRegistry,

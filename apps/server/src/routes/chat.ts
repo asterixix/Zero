@@ -390,7 +390,7 @@ export class ZeroAgent extends AIChatAgent<typeof env> {
       const _connection = await db.query.connection.findFirst({
         where: eq(connection.id, connectionId),
       });
-      if (_connection) this.driver = connectionToDriver(_connection);
+      if (_connection) this.driver = await connectionToDriver(_connection);
       this.ctx.waitUntil(conn.end());
       this.ctx.waitUntil(this.syncThreads('inbox'));
       this.ctx.waitUntil(this.syncThreads('sent'));
@@ -1188,7 +1188,7 @@ export class ZeroMCP extends McpAgent<typeof env, {}, { userId: string }> {
       throw new Error('Unauthorized');
     }
     this.activeConnectionId = _connection.id;
-    const driver = connectionToDriver(_connection);
+    const driver = await connectionToDriver(_connection);
 
     this.server.tool('getConnections', async () => {
       const connections = await db.query.connection.findMany({

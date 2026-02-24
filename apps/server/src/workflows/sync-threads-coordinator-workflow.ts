@@ -92,7 +92,7 @@ export class SyncThreadsCoordinatorWorkflow extends WorkflowEntrypoint<
       shouldLoop: boolean;
       foundConnection: any;
     };
-    const driver = connectionToDriver(foundConnection);
+    const driver = await connectionToDriver(foundConnection);
 
     if (connectionId.includes('aggregate')) {
       console.info(
